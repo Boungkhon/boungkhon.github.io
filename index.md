@@ -1,5 +1,3 @@
-![图片](/Users/mac/Downloads/IMG_3064.jpg "Magic Gardens")
-
 ~~~~~~~To be finished~~~~~~~
 
 ### Hello World！
