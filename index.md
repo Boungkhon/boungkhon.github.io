@@ -8,7 +8,7 @@
 
 - My name in Chinese is 顧(gù) 芃坤(péng kūn).
 
-![My signature in low definition](/Users/mac/Library/Mobile Documents/com~apple~CloudDocs/Website Maintainance/Signature.png "My signature")
+![My signature in low definition](/Users/mac/Downloads/Website Maintainance/Signature.png "My signature")
 
 - I've born in 2001 and grown up in Nankai District of Tianjin City. And I've been studying in the "School of the Gifted Young" of USTC (i.e. University of Science and Technology of China) as an undergraduate since 2018, majoring mathematics. I'm now living in Hefei City, Anhui Province. 
 
