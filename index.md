@@ -1,5 +1,3 @@
-~To be finished~
-
 `printf("Welcome to Pengkun Gu's Homepage!");`
 
 # Brief Introduction
@@ -23,6 +21,8 @@
 - Not prepared yet.
 
 ## Just Test Zone!!!
+
+~To be finished~
 
 ### Hello World！
 
