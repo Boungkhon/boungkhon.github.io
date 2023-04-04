@@ -1,0 +1,18 @@
+model
+{
+    for (t in 1:18) {
+        lambda_sq[t] <- lambda * lambda/2
+        tau_sq[t] ~ dexp(lambda_sq[t])
+        tau_sq_inv[t] <- 1/tau_sq[t]
+        w[t] ~ dnorm(0.00000E+00, tau_sq_inv[t])
+    }
+    for (p in 1:297) {
+        for (t in 1:18) {
+            z[p, t] ~ dnorm(0.00000E+00, 0.01)
+        }
+        mu[p] <- 1/(1 + exp(-inprod(w[], z[p, ]) + v))
+        y[p] ~ dbin(mu[p], 1)
+    }
+    lambda ~ dexp(0.01)
+    v ~ dnorm(0.00000E+00, 0.01)
+}

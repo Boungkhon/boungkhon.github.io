@@ -1,0 +1,522 @@
+---
+title: "An Analysis on Heart Disease Data"
+author: "Pengkun Gu"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Abstract
+
+In this article, I mainly studied the relation between the occurrence of heart disease and some other variables by Bayesian regression algorithm, using an open dataset.
+
+
+# Raw Data Processing
+
+The original data is downloaded from *[UCI Machine Learning Repository](http://archive.ics.uci.edu/ml/datasets/Heart+Disease "Link")*, since the data form of the unprocessed version is confusing, I finally choose to use the processed version. There are four blocks of data, respectively collected in {*Cleveland*}, {*Hungarian*}, {*VA*} and {*Switzerland*}. 
+
+In each block there are 14 attributes, respectively representing (1) **[AGE]** for *Age*, (2) **[SEX]** for *sex*, (3) **[CHESTP]** for *chest pain type*, (4) **[RESTBPS]** for *resting blood pressure*, (5) **[CHOL]** for *serum cholesterol level*, (6) **[FBS]** for *fasting blood sugar*, (7) **[RESTECG]** for *resting electrocardiographic results*, (8) **[ACHHR]** for *maximal heart rate achieved*, (9) **[EXANG]** for *exercise induced angina*, (10) **[OLDPEAK]** for *ST depression induced by exercise relative to rest*, (11) **[SLOPE]** for *slope of the peak exercise ST segment*, (12) **[COLOR]** for *number of major vessels colored by fluoroscopy*, (13) **[THAL]** for *Thallium stress test result*, (14) **[DIAG]** for *diagnosis of heart disease*. 
+
+It's notable that there are missing values included in the data. 
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# importing data
+
+library(stringr)
+library(readr)
+pathseg <- c("C:", "BayesianHomework", "FinalProject", "Data", "HeartDisease", "") 
+pathname <- paste(pathseg, collapse = "\\")
+fname_clv <- str_c(pathname, "cleveland.csv")
+fname_hng <- str_c(pathname, "hungarian.csv")
+fname_swz <- str_c(pathname, "switzerland.csv")
+fname_va <- str_c(pathname, "va.csv")
+f_clv <- read.csv(fname_clv, header = FALSE)
+f_hng <- read.csv(fname_hng, header = FALSE)
+f_swz <- read.csv(fname_swz, header = FALSE)
+f_va <- read.csv(fname_va, header = FALSE)
+cname <- c("AGE", "SEX", "CHESTP", "RESTBPS", "CHOL", "FBS", "RESTECG", "ACHHR", "EXANG", "OLDPEAK", "SLOPE", "COLOR", "THAL", "DIAG") 
+colnames(f_clv) <- cname
+colnames(f_hng) <- cname
+colnames(f_swz) <- cname
+colnames(f_va) <- cname
+
+# initializing data
+initializef <- function(f){
+  lr <- nrow(f)
+  f1 <- array(0, dim=c(lr,19))
+  for (r in 1:lr){
+    x <- as.numeric(f[r,])
+    if (is.na(x[1]) | x[1]<0){ #age
+      f1[r, 1] <- NA
+    }
+    else{
+      f1[r, 1] <- (x[1]-30)/30  
+    }
+    
+    if (is.na(x[2]) | x[2]<0){ #sex
+      f1[r, 2] <- NA
+    }
+    else{
+      f1[r, 2] <- x[2]
+    }  
+    
+    if (is.na(x[3]) | x[3]<0){ #chestp
+      f1[r, 3:5] <- NA
+    }
+    else{
+      f1[r, 3] <- +(x[3]==1)
+      f1[r, 4] <- +(x[3]==2)
+      f1[r, 5] <- +(x[3]==3)
+    }  
+    
+    if (is.na(x[4]) | x[4]<0){ #restbps
+      f1[r, 6] <- NA
+    }
+    else{
+      f1[r, 6] <- (x[4]-90)/90
+    }  
+    
+    if (is.na(x[5]) | x[5]<0){ #chol
+      f1[r, 7] <- NA
+    }
+    else{
+      f1[r, 7] <- (x[5]-150)/150
+    }  
+    
+    if (is.na(x[6]) | x[6]<0){ #fbs
+      f1[r, 8] <- NA
+    }
+    else{
+      f1[r, 8] <- x[6]
+    }  
+    
+    if (is.na(x[7]) | x[7]<0){ #restecg
+      f1[r, 9:10] <- NA
+    }
+    else{
+      f1[r, 9] <- +(x[7]==1)
+      f1[r,10] <- +(x[7]==2)
+    } 
+    
+    if (is.na(x[8]) | x[8]<0){ #achhr
+      f1[r, 11] <- NA
+    }
+    else{
+      f1[r, 11] <- (x[8]-100)/100
+    }
+    
+    if (is.na(x[9]) | x[9]<0){ #exang
+      f1[r, 12] <- NA
+    }
+    else{
+      f1[r, 12] <- x[9]  
+    }
+    
+    if (is.na(x[10]) | x[10]<0){ #oldpeak
+      f1[r, 13] <- NA
+    }
+    else{
+      f1[r, 13] <- (x[10]+1)/2
+    }  
+    
+    if (is.na(x[11]) | x[11]<0){ #slope
+      f1[r, 14:15] <- NA
+    }
+    else{
+      f1[r, 14] <- +(x[11]==1)
+      f1[r, 15] <- +(x[11]==3)
+    }  
+    
+    if (is.na(x[12]) | x[12]<0){ #color
+      f1[r, 16] <- NA
+    }
+    else{
+      f1[r, 16] <- x[12]/3 
+    }
+    
+    if (is.na(x[13]) | x[13]<0){ #thal
+      f1[r, 17:18] <- NA
+    }
+    else{
+      f1[r, 17] <- +(x[13]==6)
+      f1[r, 18] <- +(x[13]==7)
+    }  
+    
+    if (is.na(x[14]) | x[14]<0){ #diag
+      f1[r, 19] <- NA
+    }
+    else{
+      f1[r, 19] <- +(x[14]>0)  
+    }
+  }
+  return(f1)
+}
+f1_clv <- initializef(f_clv)
+f1_hng <- initializef(f_hng)
+f1_swz <- initializef(f_swz)
+f1_va <- initializef(f_va)
+
+write.csv(f1_clv, "C:\\RStudio-Workspace\\clv.csv", row.names=FALSE, col.names=FALSE, sep=",")
+write.csv(f1_hng, "C:\\RStudio-Workspace\\hng.csv", row.names=FALSE, col.names=FALSE, sep=",")
+write.csv(f1_swz, "C:\\RStudio-Workspace\\swz.csv", row.names=FALSE, col.names=FALSE, sep=",")
+write.csv(f1_va, "C:\\RStudio-Workspace\\va.csv", row.names=FALSE, col.names=FALSE, sep=",")
+```
+
+The [DIAG] column, ranging from 0 to 4, represents the degree of severity of symptom. Since in {*Hungarian*} there are only reports "0"s and "1"s in [DIAG] column, so for unity and simplicity, in this article I only distinguish the presence or absence of symptom, that is, identify all of $\{1,2,3,4\}$ with 1 in [DIAG] column.
+
+For another 13 columns of data, the translation from description to digits is shown in the following table in detail:
+
+| Columns | Translation |
+| :---: | :---: |
+| [AGE] | 30 to 0, 60 to 1, linear |
+| [SEX] | "Female" to 0, "Male" to 1 |
+| [CHESTP1] | "Asymptomatic" to 0, "Typical Angina"(1) to 1 |
+| [CHESTP2] | "Asymptomatic" to 0, "Atypical Angina"(2) to 1 |
+| [CHESTP3] | "Asymptomatic" to 0, "Non-anginal Pain"(3) to 1 |
+| [RESTBPS] | 90 to 0, 180 to 1, linear |
+| [CHOL] | 150 to 0, 300 to 1, linear |
+| [FBS]  | "<120" to 0, ">120" to 1 |
+| [RESTECG1] | "Normal"(0) to 0, "ST-T Wave Abnormality" to 1 |
+| [RESTECG2] | "Normal"(0) to 0, "Left Ventricular Hypertrophy" to 1 |
+| [ACHHR] | 100 to 0, 200 to 1, linear |
+| [EXANG] | "No" to 0, "Yes" to 1 |
+| [OLDPEAK] | -1 to 0, 1 to 1, linear |
+| [SLOPE+] | "Flat"(2) to 0, "Upsloping"(1) to 1 |
+| [SLOPE-] | "Flat"(2) to 0, "Downsloping"(3) to 1|
+| [COLOR] | 0 to 0, 3 to 1, linear |
+| [THAL1] | "Normal"(3) to 0, "Fixed"(6) to 1 |
+| [THAL2] | "Normal"(3) to 0, "Invertible"(7) to 1|
+| [DIAG] | "No"(0) to 0, "Yes"(1,2,3,4) to 1 |
+
+We regard the [DIAG] term as the label, denoted by $\textbf{y}$, and the other 18 columns of data as factors to be examined, denoted by $\textbf{z}$. The whole data (including the missed) is considered as an array of dimension 3, that is, $\textbf{z}_{h,t,p}$, were $h \in \{1:4\}$ represents the hospitals, $t \in \{1:18\}$ represents the features, and $p \in \{1:P_h\}$ represents the people included in the investigation, where explicitly $\{P_1,P_2,P_3,P_4\} = \{303,294,123,200\}$. 
+
+
+# Methodology 
+
+The first main algorithm is a meta-version of Bayesian logistic random effect regression model, which is endowed with $L^1$-prior in purpose of sparsifying the inferred parameters.
+
+The traditional logistic regression for binary data is derived from the assumption that $P(y_{h,p}=1 | \textbf{z}_{h,p}) = 1 / (1 + e^{-(\textbf{w}^\top\textbf{z}_{h,p}+v)})$, which, is further derived from some normal assumptions. If we consider the random effects and Bayesian settings, a Bayesian logistic random effect regression model can be set up as follows: 
+
+$$
+\begin{aligned}
+y_{h,p}|\mu_{h,p} &\overset{i.}{\sim} Bernoulli(\mu_{h,p})\\
+\mu_{h,p} &= \frac{1}{1 + e^{-((\textbf{w}^\top, v) \cdot (\textbf{z}_{h,p}^\top, 1)^\top + r_h)}} \\
+\end{aligned}
+$$
+
+Here $r_h$ represents the random effect of different hospitals, $\textbf{w}$ is the regression coefficient with length 13 corresponding to 13 items, while $v$ refers to the constant term. 
+
+$\textbf{w}$ is endowed with LASSO prior with prior $\lambda$, that is, $p(\textbf{w}) \varpropto exp(-\lambda\sum|w_t|)$. Noticing that the two-sided exponential distribution can be regarded as a Gaussian with its variance under a exponential distribution, it can be implemented as a hierarchical structure:
+
+$$
+\begin{aligned}
+\textbf{w} &\sim LASSO(\lambda)\\
+&\ \ \Updownarrow\\
+\tau_t^2 &\overset{i.}{\sim} Exp(\frac{\lambda^2}{2})\\
+w_t|\tau_t^2 &\sim N(0,\tau_t^2)
+\end{aligned}
+$$
+
+And it is not harmful setting $\lambda$ as another random parameter with a broad prior distribution in order to avoid the discordant cross-validation procedure for tuning $\lambda$.
+
+We do not assume that we have any knowledge on the distribution of data $\textbf{z}$, so we here take non-informative prior $\textbf{z} \sim 1$. So does $v \sim 1$. Without any prior knowledge on those 4 different hospitals, we regard $r_h$ as exchangeable parameters, that is, they are $i.i.d.$ conditioning on some common parameter $\sigma$. And $\sigma$ can be assumed with a broad prior distribution.
+
+The total prior distributions is demonstrated as follows:
+
+$$
+\begin{aligned}
+\textbf{w} &\sim LASSO(\lambda)\\
+\lambda &\sim 1_{\mathbb{R}^+}\\
+v &\sim 1\\
+z_{h,t,p} &\overset{i.}{\sim} 1\\
+r_h|\sigma &\overset{i.}{\sim} N(0,\sigma)\\
+\sigma &\sim \Gamma^{-1}(1,1)\\
+\end{aligned}
+$$
+
+But I found a regretful fact that some data provider missed several columns of data, leading to difficulties in defining the regression parameters. To be explicit, in {*Hungarian*}, [SLOPE], [COLOR], [THAL] is mostly missing; in {*Switzerland*}, [FBS], [CHOL], [COLOR] is mostly missing and [THAL] is severely missing; in {*VA*}, [COLOR], [THAL] is mostly missing. Besides of that, there are also lot of occasional missing values. 
+
+The missing values have to be considered. The whole data $\textbf{z}$ can be viewed as related to a missing variable $\textbf{m}=\{m_{h,t,p}\}$ where $m_{h,t,p}=1$ means $z_{h,t,p}$ can be observed and $m_{h,t,p}=0$ means $z_{h,t,p}$ is missed. According to $\textbf{m}$, $\textbf{z}$ can be divided into 2 parts: $\textbf{z}_{obs}$ and $\textbf{z}_{mis}$. In this case, without any negative evidence found or negative hypothesis proposed, it's reasonable to assume that the missing mechanism is so-called *missing completely at random* (MCAR), that is, $\textbf{m}$ is independent to both observed and missing data. Or at least *missing at random* (MAR), that is, $\textbf{m}$ is independent to the missing data. Here we postpone the controversy to later sections and here we only need to agree on that directly deleting the defective data would not lead to inferential bias.  
+
+And in that later section, I'll try to use EM algorithm to take advantage of the defective data and carry out regression with missing values. The main methodology there, is to "refill the missing data using current parameters" and "do regression and choose new parameter based on the filled data" alternatively until it seems to converge. 
+
+
+# Regression on a Single Dataset.
+
+Since the data in {*Cleveland*} have few missing values and the data is adequate for an elementary logistic regression, we first ignore all other 3 dataset and delete all defective data in {*Cleveland*}. In this simplified case the random effect can be ignored and the problem turns to traditional Bayesian logistic regression. Here's the model:
+
+$$
+\begin{aligned}
+y_{p}|\mu_{p} &\overset{i.}{\sim} Bernoulli(\mu_{h,p})\\
+\mu_{p} &= \frac{1}{1 + e^{-(\textbf{w}^\top, v) \cdot (\textbf{z}_{p}^\top, 1)^\top}} \\
+\textbf{w} &\sim LASSO(\lambda)\\
+\lambda &\sim 1_{\mathbb{R}^+}\\
+v &\sim 1\\
+z_{t,p} &\overset{i.}{\sim} 1\\
+\end{aligned}
+$$
+
+The posterior distribution of such parameters given data $\textbf{y}$ and $\textbf{z}$ is
+
+$$
+\begin{aligned}
+p(\textbf{w} | \textbf{y},\textbf{z}) &= \int_{\mathbb{R}^2} p(\textbf{w},v,\lambda | \textbf{y},\textbf{z}) \ dv\  d\lambda\\
+p(\textbf{w},v,\lambda | \textbf{y},\textbf{z}) &\varpropto p(\textbf{y} | \textbf{w},v,\lambda,\textbf{z}) \cdot p(\textbf{w},v,\lambda | \textbf{z}) \\
+&= p(\textbf{w}|\lambda) \cdot p(\textbf{y}|\textbf{w},v,\textbf{z}) \cdot 1_{\lambda>0}\\
+&= p(\textbf{w}|\lambda) \cdot \prod_p (\mu_p \cdot 1_{y_p=1} + (1-\mu_p) \cdot 1_{y_p=0}) \cdot 1_{\lambda>0}
+\end{aligned}
+$$
+
+```{r eval=FALSE, include=FALSE}
+library(R2WinBUGS)
+library(coda)
+library(boot)
+library(stringr)
+library(readr)
+
+f1_clv <- read.csv("C:\\RStudio-Workspace\\clv.csv",header=TRUE,sep=",")
+data1_clv <- round(as.matrix(na.omit(f1_clv)),3)
+z <- as.array(data1_clv[,1:18], dimnames=NULL)
+y <- as.array(data1_clv[,19], dimnames=NULL)
+y <- as.vector(y)
+
+data_bugs <- list("z", "y")
+para_bugs <- c("w", "v", "lambda")
+
+lr <- function(){
+  for(t in 1:18){
+    lambda_sq[t] <- lambda*lambda/2
+    tau_sq[t] ~ dexp(lambda_sq[t])
+    tau_sq_inv[t] <- 1/tau_sq[t]
+    w[t] ~ dnorm(0, tau_sq_inv[t])
+  }
+  for(p in 1:297){
+    for(t in 1:18){
+      z[p,t] ~ dnorm(0, 0.01)
+    }
+    mu[p] <- 1/(1+exp(-inprod(w[],z[p,])+v))
+    y[p] ~ dbin(mu[p], 1)
+  }
+  lambda ~ dexp(0.01)
+  v ~ dnorm(0, 0.01)
+}
+write.model(lr, "lr.bug")
+# LACRIMOSA: do not write like c<-dnorm(0,a+b) or something... only variables, not expressions. 
+# LACRIMOSA: Why must I change y to be an vector but not keeping it as an array???
+# LACRIMOSA: no single variables can be legally defined in a loop
+```
+
+```{r eval=FALSE, include=FALSE}
+# setwd("C:/BayesianHomework/FinalProject/Result")
+lr_sim <- bugs(data=data_bugs, inits=NULL, parameters.to.save=para_bugs, model.file="lr.bug", n.chains=3, n.iter=8000, n.burnin=3000, n.thin=1, DIC=TRUE, codaPkg=TRUE, bugs.directory="C:/WinBUGS14", debug=TRUE)
+```
+
+I used Gibbs sampling tool *WinBUGS* and R package `R2WinBUGS` here to sample from the posterior distribution. Here shows the result:
+
+| node | mean | sd | MC error | 2.5% | median | 97.5% |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| $\lambda$ | 	1.11 |	0.3 |	0.009895 |	0.6229 |	1.077 |	1.782	|
+|	$v$ |	2.374 |	0.9637 |	0.04263 |	0.4856 |	2.378 |	4.257 |	
+|	[AGE] |	0.007958 |	0.5224 |	0.0156 |	-1.062 |	0.01224 |	1.052 |	
+|	[SEX] |	1.117 |	0.4629 |	0.01289 |	0.2441 |	1.101 |	2.06 |	
+|	[CHESTP1] |	-1.483 |	0.63 |	0.01164 |	-2.743 |	-1.48 |	-0.268 |	
+|	[CHESTP2] |	-0.6667 |	0.4945 |	0.007617 |	-1.695 |	-0.6417 |	0.2133 |	
+| [CHESTP3] |	-1.544 |	0.4668 |	0.008192 |	-2.488 |	-1.538 |	-0.642 |	
+|	[RESTBPS] |	1.052 |	0.8366 |	0.02171 |	-0.3452 |	0.9819 |	2.86 |	
+|	[CHOL] |	0.3766 |	0.4813 |	0.0112 |	-0.5105 |	0.3433 |	1.395	|
+|	[FBS] |	-0.347 |	0.4643 |	0.006087 |	-1.329 |	-0.3102 |	0.492 |	
+|	[RESTECG1] |	0.2743 |	0.9751 |	0.009851 |	-1.556 |	0.1667 |	2.493	|
+|	[RESTECG2] | 0.4101 |	0.3376 | 0.004728 |	-0.2 |	0.396 |	1.103 |	
+|	[ACHHR] |	-1.158 |	0.86 |	0.02717 |	-2.959 |	-1.103 |	0.272 |	
+| [EXANG] |	0.7659 |	0.4044 |	0.006962 |	-0.0003 |	0.761 |	1.563 |	
+|	[OLDPEAK] |	0.741 |	0.4169 |	0.01199 |	-0.0413 |	0.7314 |	1.593 |	
+|	[SLOPE+] |	-0.9263 |	0.4307 |	0.008951 |	-1.805 |	-0.9194 |	-0.1106	|
+|	[SLOPE-] |	-0.332 |	0.5954 |	0.007551 |	-1.613 |	-0.2733 |	0.7661 |	
+|	[COLOR] |	3.236 |	0.7559 |	0.01323 |	1.805 |	3.21 |	4.756 |	
+|	[THAL1] |	0.1537 |	0.5573 |	0.006899 |	-0.9402 |	0.1274 |	1.322 |	
+|	[THAL2] |	1.433 |	0.3919 |	0.0061 |	0.6697 |	1.425 |	2.217 |	
+
+```{r warning=FALSE, include=FALSE}
+setwd("C:/BayesianHomework/FinalProject/Result")
+chain1 <- read.table("coda1.txt")
+normalizec <- function(chain){
+  lor <- nrow(chain)
+  chain0 <- array(0, dim=c(lor,18))
+  chain0[,1] <- chain[,1] / 0.5224
+  chain0[,2] <- chain[,2] / 0.4629
+  chain0[,3] <- chain[,3] / 0.63
+  chain0[,4] <- chain[,4] / 0.4945
+  chain0[,5] <- chain[,5] / 0.4668
+  chain0[,6] <- chain[,6] / 0.8366
+  chain0[,7] <- chain[,7] / 0.4813
+  chain0[,8] <- chain[,8] / 0.4643
+  chain0[,9] <- chain[,9] / 0.9751
+  chain0[,10] <- chain[,10] / 0.3376
+  chain0[,11] <- chain[,11] / 0.86
+  chain0[,12] <- chain[,12] / 0.4044
+  chain0[,13] <- chain[,13] / 0.4169
+  chain0[,14] <- chain[,14] / 0.4307
+  chain0[,15] <- chain[,15] / 0.5954
+  chain0[,16] <- chain[,16] / 0.7559
+  chain0[,17] <- chain[,17] / 0.5573
+  chain0[,18] <- chain[,18] / 0.3919
+  return(chain0)
+}
+chain1 <- chain1[15001:105000,2]
+chain1 <- array(chain1, dim=c(5000,18))
+chain2 <- read.table("coda2.txt")
+chain2 <- chain2[15001:105000,2]
+chain2 <- array(chain2, dim=c(5000,18))
+chain3 <- read.table("coda3.txt")
+chain3 <- chain3[15001:105000,2]
+chain3 <- array(chain3, dim=c(5000,18))
+chain <- rbind(chain1,chain2,chain3)
+chain <- normalizec(chain)
+```
+
+Here I plot the normalized density of coefficients $\{w_{1},...,w_{18}\}$, hyperparameter $v$ and $\lambda$:
+
+```{r echo=FALSE, fig.height=4, fig.width=7, warning=FALSE}
+library(randomcoloR)
+palle <- distinctColorPalette(18) 
+plot(density(chain[,1]),col=palle[1],xlim=c(-6,7),ylim=c(0,0.6),main="Normalized Density of w[]", xlab="w", ylab="f")
+lines(density(chain[,2]),col=palle[2])
+lines(density(chain[,3]),col=palle[3])
+lines(density(chain[,4]),col=palle[4])
+lines(density(chain[,5]),col=palle[5])
+lines(density(chain[,6]),col=palle[6])
+lines(density(chain[,7]),col=palle[7])
+lines(density(chain[,8]),col=palle[8])
+lines(density(chain[,9]),col=palle[9])
+lines(density(chain[,10]),col=palle[10])
+lines(density(chain[,11]),col=palle[11])
+lines(density(chain[,12]),col=palle[12])
+lines(density(chain[,13]),col=palle[13])
+lines(density(chain[,14]),col=palle[14])
+lines(density(chain[,15]),col=palle[15])
+lines(density(chain[,16]),col=palle[16])
+lines(density(chain[,17]),col=palle[17])
+lines(density(chain[,18]),col=palle[18])
+legend("bottomright", c("AGE", "SEX", "CHESTP1", "CHESTP2", "CHESTP3", "RESTBPS", "CHOL", "FBS", "RESTECG1", "RESTECG2", "ACHHR", "EXANG", "OLDPEAK", "SLOPE+", "SLOPE-", "COLOR", "THAL1", "THAL2"), col=palle, text.col = palle, cex=0.5, fill = palle)
+```
+
+```{r warning=FALSE, include=FALSE}
+setwd("C:/BayesianHomework/FinalProject/Result")
+chain_m1 <- read.table("coda1.txt")
+chain_m1 <- chain_m1[10001:15000,2]
+chain_m2 <- read.table("coda2.txt")
+chain_m2 <- chain_m2[10001:15000,2]
+chain_m3 <- read.table("coda3.txt")
+chain_m3 <- chain_m3[10001:15000,2]
+chain_m <- c(chain_m1,chain_m2,chain_m3)
+```
+
+```{r warning=FALSE, include=FALSE}
+setwd("C:/BayesianHomework/FinalProject/Result")
+chain_l1 <- read.table("coda1.txt")
+chain_l1 <- chain_l1[5001:10000,2]
+chain_l2 <- read.table("coda2.txt")
+chain_l2 <- chain_l2[5001:10000,2]
+chain_l3 <- read.table("coda3.txt")
+chain_l3 <- chain_l3[5001:10000,2]
+chain_l <- c(chain_l1,chain_l2,chain_l3)
+```
+
+```{r echo=FALSE, fig.height=3, fig.width=3, warning=FALSE}
+plot(density(chain_m),xlim=c(-1,5),ylim=c(0,0.5),main="Density of v",xlab="lambda", ylab="f")
+plot(density(chain_l),xlim=c(0,2),ylim=c(0,2),main="Density of lambda",xlab="lambda", ylab="f")
+```
+
+As a primary conclusion, the 95% confidence region for [COLOR], [THAL2], [CHESTP3] is far from 0, which means with very high confidence [COLOR] and [THAL] have significant correlation with the diagnosis of heart disease. Besides these, there are also some features such as [SEX], [EXANG], [OLDPEAK], [SLOPE+], [CHESTP1], whose 95% confidence region cannot be definitely separated from 0, it's still evidently that they have strong correlation with the diagnosis of heart disease. Some other features, such as [CHESTP2], [ACHHR], [RESTBPS], [RESTECG2] still have a relatively large confidence being nonzero. The features [AGE], [RESTECG1], [THAL1], [SLOPE-] have definitely no evident relation with heart disease, providing only this dataset. And the other features, such as [CHOL], [FBS], maybe are relative to heart disease, but not evidently enough.
+
+If we are willing to propose an automatic procedure, to calling attention to patients highly possible with heart disease, and if data of all checking items are attainable (which is unlikely true), [COLOR], [THAL2], [ACHHR], [CHESTP2], [CHESTP3], [EXANG], [SEX], [OLDPEAK] can be considered. The most 3 significant ones, [COLOR], [THAL2] and [CHESTP3], can only assured in certain hospital, though some of the auxiliary items can be obtained without going to hospital. It's not feasible for an at-home heart disease early-warning algorithm based on this dataset. 
+
+Thought evidently correlative, it is far from enough to talk about exact illness from some complex body measurements, such as [FBS], [ACHHR], [SLOPE] and so on. In this analysis we only used a linear model under a certain translation of the original data, but the interpretation of such measurements can be really sophisticated. For more exact prediction or inference, maybe a more complex model should be implemented, such as *quadratic discriminant analysis*. But a more complex model lead to higher chance of overfitting, I'm still skeptical about whether that will perform better on this dataset with such a limited amount of data.
+
+But there are some strange things, let us have a look at how the variable are empirically correlated, for comparing with the posterior inference:
+
+```{r echo=FALSE, fig.height=10, fig.width=10}
+library(pheatmap)
+f1_clv <- read.csv("C:\\RStudio-Workspace\\clv.csv",header=TRUE,sep=",")
+data1_clv <- round(as.matrix(na.omit(f1_clv)),3)
+cname <- c("AGE", "SEX", "CHESTP1", "CHESTP2", "CHESTP3", "RESTBPS", "CHOL", "FBS", "RESTECG1", "RESTECG2", "ACHHR", "EXANG", "OLDPEAK", "SLOPE+", "SLOPE-", "COLOR", "THAL1", "THAL2", "DIAG")
+colnames(data1_clv) <- cname
+pheatmap(cor(data1_clv), cluster_row=FALSE, cluster_cols=FALSE, color=colorRampPalette(c("darkcyan", "cadetblue1", "goldenrod1", "brown3", "black"))(50), display_numbers = TRUE)
+```
+
+It seems that the posterior distribution of $\textbf{w}$ is largely congruent with the correlation of [DIAG] and different items. But it is interesting that the inference seems far from the common sense in our life. For example, coefficients of 3  [CHESYP_] items are very likely with negative coefficient, which suggests that compared with "asymptomatic" result in [CHESTP_], the 3 "symptomatic" result all tends to suggest that there are not heart disease, or just conversely, "asymptomatic" result strongly tends to suggest there is heart disease. And the same peculiarity happens on [ACHHR], which shows that the coefficient of that item is likely to be negative, leading to a strange result that high achieved heart rate suggests lower chance of heart disease, but we know that human with heart disease usually have a too-high heart rate. And about "fluoroscopy" item, I found some materials claiming that some fluoroscopy methods like CT can be used to detect "very bright" regions in their arteries, corresponding to calcified lesions. So it seems reasonable that higher number of colored vessel are related to higher chance of heart disease, which is shown in the posterior inference.
+
+But it's hard to say whether thare is anything wrong in the original data, which is indeed downloaded from *[UCI Machine Learning Repository](http://archive.ics.uci.edu/ml/datasets/Heart+Disease "Link")*. And the same peculiarity also happens in *hungarian*, *switzerland* and *VA*. It is possible that original interpretation or raw data processing provided by *[UCI Machine Learning Repository](http://archive.ics.uci.edu/ml/datasets/Heart+Disease "Link")* have something wrong or improper. 
+
+# Dealing with Missing Data
+
+Since in *Hungarian*, *VA* and *Switzerland*, most of key item, that is, [COLOR] and [THAL] are missing, and that the dataset have peculiarity in result, it is not too valuable in processing a more complicated meta-analysis. But here I still choose to state the methodology of doing meta-regression with missing data.
+
+Here we fix $\lambda$ for simplicity. Usually missing data can be regarded as parameters whose posterior distribution is to be simulated, that is, to find $p(\textbf{z}_{mis},[\textbf{w},v,\textbf{r}]|\textbf{z}_{obs},\textbf{y})$. But when dimension of $\textbf{z}_{mis}$ is too high relative to dimension of other parameters, the usual MCMC methods become inefficient. A common solution for missing data is EM algorithm and data augmentation, though through which we can only approximately calculate the *maximum a posterior* (MAP) solution of $\textbf{w},v,\textbf{r}$. 
+
+A common EM algorithm requires both $p([\textbf{w},v,\textbf{r}]|\textbf{z}_{obs},\textbf{z}_{mis},\textbf{y})$ and $p(\textbf{z}_{mis}|[\textbf{w},v,\textbf{r}],\textbf{z}_{obs},\textbf{y})$ easy to compute. In the $k$-th iteration, first we draw samples $\widehat{\textbf{z}_{mis}}_k$ from distribution $p(\textbf{z}_{mis}|\widehat{[\textbf{w},v,\textbf{r}]}_k,\textbf{z}_{obs},\textbf{y})$, then do maximize the posterior density from the augmented data, obtaining $\widehat{[\textbf{w},v,\textbf{r}]}_{k+1}$ from $p([\textbf{w},v,\textbf{r}]|\textbf{z}_{obs},\widehat{\textbf{z}_{mis}}_k,\textbf{y})$. 
+
+The way of drawing $\widehat{\textbf{z}_{mis}}_k$ is usually taking expectation, which arises from the fact that
+
+$$
+\begin{aligned}
+(\textbf{w},v,\textbf{r})^*_{map} 
+&= \underset{[\textbf{w},v,\textbf{r}]}{argmax}\ p((\textbf{w},v,\textbf{r})|\textbf{z}_{obs},\textbf{y}) \\
+&= \underset{[\textbf{w},v,\textbf{r}]}{argmax}\ p(\textbf{w},v,\textbf{r}) \cdot p(\textbf{y}|(\textbf{w},v,\textbf{r}),\textbf{z}_{obs})\\
+&= \underset{[\textbf{w},v,\textbf{r}]}{argmax}\ \mathbb{E}_{\textbf{z}_{mis}|(\textbf{w},v,\textbf{r}),\textbf{z}_{obs},\textbf{y}}\bigg[p(\textbf{w},v,\textbf{r}) \cdot p(\textbf{y}|(\textbf{w},v,\textbf{r}),\textbf{z}_{obs},\textbf{z}_{mis})\bigg]
+\end{aligned}
+$$
+
+The intuition is to iteratively optimize $[\textbf{w},v,\textbf{r}]$ which occurs 2 times in the expression above, and an iterative algorithm can converge to the optimal solution. There are also some variative algorithms derived from fundamental EM, for example, stochastic EM, which directly sample $\textbf{z}_{mis}$ from $p(\textbf{z}_{mis}|[\textbf{w},v,\textbf{r}],\textbf{z}_{obs},\textbf{y})$ instead of taking expectation, which is more convenient sometimes.
+
+In this case the MAR (or MCAR) assumption ensured that the missing variable $\textbf{m}$ is independent with the missing value: $p(\textbf{m}|\textbf{z}_{obs},\textbf{z}_{mis},\textbf{y},\phi) = p(\textbf{m}|\textbf{z}_{obs},\textbf{y},\phi)$, which makes it feasible to talk about $p(\textbf{z}_{mis}|[\textbf{w},v,\textbf{r}],\textbf{z}_{obs},\textbf{y})$. And this distribution can be seen as marginalized from $p(\textbf{z}|[\textbf{w},v,\textbf{r}],\textbf{y})$. Based on this, some approximate assumption can be adopted, for example, $p(\textbf{z}_{h,p}|[\textbf{w},v,\textbf{r}],y_{h,p})$ are independently multivariate normal, witch is decided by 2 mean vectors $\boldsymbol{\mu}_0, \boldsymbol{\mu}_1$ and 2 covariance matrix $\boldsymbol{\Sigma}_0, \boldsymbol{\Sigma}_1$ with dimension 18, which is related to parameters $[\textbf{w},v,\textbf{r}]$. 
+
+For example, if a wide normal prior is endowed for $\textbf{z}$,
+
+$$
+\begin{aligned}
+p(\textbf{z}_{h,p}|[\textbf{w},v,\textbf{r}],y_{h,p}) &\varpropto p(y_{h,p}|[\textbf{w},v,\textbf{r}],\textbf{z}_{h,p})\ p(\textbf{z}_{h,p}|[\textbf{w},v,\textbf{r}]) \\
+&= p(y_{h,p}|[\textbf{w},v,\textbf{r}],\textbf{z}_{h,p})\ p(\textbf{z}_{h,p})\\
+&\varpropto \bigg[ \frac{1_{y_p=1}}{1 + e^{-[(\textbf{w}^\top, v) \cdot (\textbf{z}_{h,p}^\top, 1)^\top +r_h]}} + (1_{y_p=0}-\frac{1_{y_p=0}}{1 + e^{-[(\textbf{w}^\top, v) \cdot (\textbf{z}_{h,p}^\top, 1)^\top + r_h]}}) \bigg] \cdot e^{-\epsilon \cdot \Vert \textbf{z}_{h,p} \Vert_2^2} \\
+\end{aligned}
+$$
+
+Then use Laplace approximation to decide $\boldsymbol{\mu}_0, \boldsymbol{\Sigma}_0$ or $\boldsymbol{\mu}_1, \boldsymbol{\Sigma}_1$. for different value of $y_{h,p}$.
+
+The expectation procedure for partly-given data can be done by marginalizing the given part. Obviously this approximation is too coarse to implement, but some finer discrete model can be figured out, and is omitted here.
+
+Then in this case, in each iteration, the "Expectation" part requires about linear time related to the number of rows with missing values and the "Maximization" procedure require at most an optimization mission under 20 dimensions. The time cost is acceptable. 
+
+
+# References
+
+[1]. [UCI Machine Learning Repository: Heart disease Data Set](http://archive.ics.uci.edu/ml/datasets/Heart+Disease "Link")
+
+[2]. {Gelman.A, Carlin.J, Stern.H, Dynson.D, Vehtari.A, Rubin.D}, 2013, *Bayesian Data Analysis*, 3rd ed, CRC Press.
+
+[3]. {Pelberg.R}, 2015, *Cardiac CT Angiography Manual*, 2nd ed, Springer-Verlag.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
