@@ -1,0 +1,167 @@
+\documentclass[a4paper,10pt]{article}
+
+\usepackage[table]{xcolor}
+\usepackage[ruled]{algorithm2e}
+
+\usepackage{graphicx}
+\usepackage{fullpage}
+\usepackage{amsmath,boxedminipage}
+\usepackage{amssymb,amsthm}
+\usepackage[totalwidth=166mm,totalheight=240mm]{geometry}
+\usepackage{framed}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+
+\parindent0mm
+%\pagestyle{empty}
+
+
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+
+
+\newcommand{\nop}[1]{}
+
+\newcounter{aufgc}
+\newenvironment{exercise}[1]%
+{\refstepcounter{aufgc}\textbf{Exercise \arabic{aufgc}} \emph{#1}\\}
+{
+
+  \hrulefill\medskip}%
+
+\renewcommand{\labelenumi}{(\alph{enumi})}
+
+\providecommand{\abs}[1]{\lvert#1\rvert} \providecommand{\norm}[1]{\lVert#1\rVert}
+
+\newcommand{\E}{\mathrm{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\rank}{\mathrm{rank}}
+\begin{document}
+
+
+\begin{minipage}[b]{0.58\textwidth}
+\large 
+School of Computer Science and Technology\\
+University of Science and Technology of China
+\end{minipage}
+
+\hrulefill
+
+\vspace{0.2cm}
+\begin{center}
+  {\large \bf \textcolor{red}{Marked} Exercises for \\[1mm]
+Algorithms for Big Data\\[0.5mm]
+2023 Spring}\\
+\textcolor{red}{Due 17 April 2023 at 17:59}
+  \bigskip
+
+\end{center}
+%\vspace{0.1cm}
+
+
+
+
+
+
+
+
+
+%\newpage
+\hrulefill\medskip
+
+
+%\hrulefill
+
+%\vspace{0.2cm}
+\begin{exercise}{15 points}
+	Let $\sum_{i=1}^{r}\sigma_i \boldsymbol u_i \boldsymbol v_i^\top$ be the SVD of $A$, where $A\in \mathbb{R}^{n\times d}$. Show that $\norm{\boldsymbol u_1^\top A}=\sigma_1$ and $\norm{\boldsymbol u_1^\top A}=\max_{\norm{\boldsymbol u}=1}\norm{\boldsymbol u^\top A}$, where $\norm{\boldsymbol x}=\sqrt{\sum_{i=1}^d x_i^2}$ for a vector $\boldsymbol x\in \mathbb{R}^d$.
+\end{exercise}
+
+\vspace{0.2cm}
+\begin{exercise}{25 points}
+Let $A$ be an $n\times d$ matrix with SVD such that $A=\sum_{i=1}^r \sigma_i \boldsymbol u_i \boldsymbol v_i^\top$. Let $\boldsymbol x\in \mathbb{R}^d$ be a vector such that $\norm{\boldsymbol x}_2=1$ and $|\boldsymbol x^\top \boldsymbol v_1|\geq \delta$ for some $\delta >0$. Suppose that $\sigma_2<\frac{1}{2}\sigma_1$. Let $\boldsymbol w$ be the vector after $k=\log(1/\varepsilon\delta)$ iterations of the power method, namely,
+	\[
+	\boldsymbol w=\frac{(A^\top A)^k \boldsymbol x}{\norm{(A^\top A)^k \boldsymbol x}_2}.
+	\]
+Prove that the length of the projection of $\boldsymbol w$ onto the line defined by the first singular vector $\boldsymbol v_1$ is at least $1-\varepsilon$, i.e., $|\boldsymbol w^\top \boldsymbol v_1|\geq 1-\varepsilon$.
+\end{exercise}
+
+
+\vspace{0.2cm}
+\begin{exercise}{20 points}
+Let $k<d$. Let $U\in \mathbb{R}^{d\times k}$ be a random matrix such that its $(i,j)$-th entry is denoted as $u_{ij}$, where $\{u_{ij}\}$ are independent random variables such that 
+\begin{equation*}
+u_{ij}=\begin{cases}
+1 & \text{with probability $\frac12$},\\
+-1 & \text{with probability $\frac12$}.
+\end{cases}
+\end{equation*}
+Now we use matrix $U$ as a random projection matrix. That is, for a (row) vector $\boldsymbol a\in \mathbb{R}^d$, we map it to 
+\[
+f(\boldsymbol a)=\frac{1}{\sqrt{k}} \boldsymbol a U.
+\]
+For each $j$ such that $1\leq j\leq k$, define $b_j= [f(\boldsymbol a)]_j$, i.e., $b_j$ is the $j$-th entry of $f(\boldsymbol a)$. 
+\begin{itemize}
+\item What is the expectation $\E[b_j]$?
+\item What is $\E[b_j^2]$?
+\item What is $\E[\norm{f(\boldsymbol a)}^2]$?
+\end{itemize}
+\end{exercise}
+
+\begin{exercise}{20 points}
+In the class, we have seen an algorithm, denoted by $\mathcal{A}$, for the $(c,r)$-ANN problem with success probability at least $0.6$. That is, upon a queried vertex $x$ such that there exists a point $a^*$ in the set $\mathcal{P}$ with $d(x,a^*)\leq r$, the algorithm $\mathcal{A}$ outputs some $a\in \mathcal{P}$ with $d(x,a)\leq c\cdot r$ with probability at least $0.6$.
+
+Let $\delta\in (0,1)$. Using the above $\mathcal{A}$ as a subroutine, give a new algorithm $\mathcal{B}$ with success probability at least $1-\delta$. That is, for the above query vertex $x$, the algorithm $\mathcal{B}$ outputs some $a\in \mathcal{P}$ with $d(x,a)\leq c\cdot r$ with probability at least $1-\delta$. Your algorithm should use as little query time as possible. Explain the correctness of your algorithm and state its query time, assuming the query time of $\mathcal{A}$ is $T_{\mathcal{A}}$. 
+\end{exercise}
+
+\begin{exercise}{20 points}
+Let $\alpha\in (0,1]$. Suppose we change the (basic) Morris algorithm to the following:
+\begin{enumerate}
+\item Initialize $X\gets 0$.
+\item For each update, increment $X$ by $1$ with probability $\frac{1}{(1+\alpha)^X}$.
+\item For a query, output $\tilde{n}=\frac{(1+\alpha)^X-1}{\alpha}$.
+\end{enumerate}
+
+
+Let $X_n$ denote $X$ in the above algorithm after $n$ updates. Let $\tilde{n}=\frac{(1+\alpha)^{X_n}-1}{\alpha}$.
+\begin{itemize}
+\item Calculate $\E[\tilde{n}]$ and upper bound $\Var[\tilde{n}]$.
+\item Let $\varepsilon,\delta\in (0,1)$. Based upon the above algorithm (you may select whatever $\alpha$ as you wish), give a new algorithm such that with probability at least $1-\delta$, it outputs an estimator $\tilde{n}$ such that $|\tilde{n}-n|\leq \varepsilon n$. Explain the correctness and the (\emph{worst-case}) space complexity (i.e., the number of bits) of your algorithm. 
+It suffices to give an algorithm such that with probability at least $1 - \delta'$, its \emph{worst-case} space complexity is a polynomial function of $\frac{1}{\delta}$, $\frac{1}{\delta'}$, $\frac{1}{\varepsilon}$ and $\log\log n$, i.e., $ \mathrm{poly}(\frac{1}{\delta}, \frac{1}{\delta'}, \frac{1}{\varepsilon}, \log \log n)$.
+
+% \emph{You do not have to analyze your space expectation, but please analyze your space }\emph{\textbf{upper bound}}.
+
+
+\end{itemize}
+\end{exercise}
+
+\begin{exercise}{\textcolor{red}{Bonus} 10 points}
+Recall that in the class (see Lecture note 7), we have seen one algorithm based on dimension reduction for solving $(c,r)$-ANN problem. 
+
+Let $0<p\leq \frac12$. Prove that for any $\boldsymbol x, \boldsymbol y\in \{0,1\}^d$, it holds that
+\[
+\Pr[(U \boldsymbol x)_i\neq (U \boldsymbol y)_i] = \frac{1}{2}\left(1-(1-2p)^{\textrm{Ham}(\boldsymbol x,\boldsymbol y)}\right),
+\]
+where $U$ is a $k\times d$ random matrix such that the entries are independently and identically distributed (i.i.d.) as follows:
+\begin{equation*}
+	u_{ij}=\begin{cases}
+		1 & \text{with probability $p$},\\
+		0 & \text{with probability $1-p$},
+	\end{cases}
+\end{equation*}
+and all the calculations are in the finite field $\mathrm{GF}(2)$ (i.e., addition and multiplication are always modulo $2$).
+
+\medskip
+\textbf{Hint:} You may consider to use the following fact: Let $\boldsymbol w\in \{0,1\}^d$ be a random vector such that all entries $w_i$'s are i.i.d. and $\Pr[w_i=1]=\Pr[w_i=0]=\frac12$ for each $i\leq d$. Then $\Pr[\boldsymbol w^\top \boldsymbol x\neq \boldsymbol w^\top \boldsymbol y]=\frac{1}{2}$ if $\boldsymbol x\neq \boldsymbol y$.
+\end{exercise}
+
+
+
+
+\end{document}
+
+%%% Local Variables:ƒ
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
